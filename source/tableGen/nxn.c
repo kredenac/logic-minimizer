@@ -34,7 +34,7 @@ unsigned FILES_MASK;
 unsigned RANKS_MASK;
 
 unsigned long long MAX_POS;
-
+const char outputFIleName[] = "chessDict.txt";
 
 /* KRKPosition (coordinates of three pieces) */
 typedef struct pos {
@@ -90,7 +90,7 @@ bool _B_SETTING_STEPS_DONE;
 // Declarations  
 
 // Miscellanous 
-void PrintTable(LookUpRecord * lur);
+void PrintTable(LookUpRecord * lur, bool shouldPrint);
 void Print(KRKPosition p);
 BVKRKPosition Position2Bitvector(KRKPosition p);
 void Bitvector2Position(BVKRKPosition i,KRKPosition *p);
@@ -1383,15 +1383,15 @@ unsigned Measure(KRKPosition p) {
 /* -------------------------------------------------------------------------------- */
 
 // prints out the lookup table
-void PrintTable(LookUpRecord * lur)
+void PrintTable(LookUpRecord * lur, bool shouldPrint)
 {
-    /*
-    typedef struct lur {
-        BVKRKPosition Pos, OptimalPos, OptimalDist, StrategPos, StrategDist; 
-        eStratStep step;
-    } LookUpRecord;
-    */
     int legitMoves = 0;
+    FILE * f = fopen(outputFIleName, "w");
+    if (f == NULL) {
+        printf("Error opening file!\n");
+        exit(1);
+    }
+    fprintf(f, "Ignore this first line. Format: isWhiteTurn, isRookCaptured, BKx, BKy, WKx, WKy, WRx, WRy. One line for 'key', next line for 'value'.\n");
     KRKPosition pos;
     for(int i=0;i<MAX_POS; i++)
     {
@@ -1402,6 +1402,8 @@ void PrintTable(LookUpRecord * lur)
             continue;
         }
         legitMoves++;
+        // if (!shouldPrint)
+        //     continue;
 
         //Print(pos);
         // printf("BitVec=%llu, %llu, %llu, %llu, %llu\n", 
@@ -1414,24 +1416,32 @@ void PrintTable(LookUpRecord * lur)
 
         Bitvector2Position(i, &pos);
 
-        printf("Key: turn = %s, rook captured = %s, BK = %d, %d, WK = %d, %d, WR = %d, %d\n",
-            pos.bWhiteOnTurn ? "white" : "black", 
-            pos.bRookCaptured ? "true" : "false",
+        // printf("Key: turn = %s, rook captured = %s, BK = %d, %d, WK = %d, %d, WR = %d, %d\n",
+        //     pos.bWhiteOnTurn ? "white" : "black", 
+        //     pos.bRookCaptured ? "true" : "false",
+        //     pos.BKx, pos.BKy,
+        //     pos.WKx, pos.WKy,
+        //     pos.WRx, pos.WRy
+        //     );
+        fprintf(f, "%d %d %d %d %d %d %d %d\n",
+            pos.bWhiteOnTurn, 
+            pos.bRookCaptured,
             pos.BKx, pos.BKy,
             pos.WKx, pos.WKy,
             pos.WRx, pos.WRy
             );
-
+            
         Bitvector2Position(r.OptimalPos, &pos);
-        printf("Value: turn = %s, rook captured = %s, BK = %d, %d, WK = %d, %d, WR = %d, %d\n",
-            pos.bWhiteOnTurn ? "white" : "black", 
-            pos.bRookCaptured ? "true" : "false",
+        fprintf(f, "%d %d %d %d %d %d %d %d\n",
+            pos.bWhiteOnTurn, 
+            pos.bRookCaptured,
             pos.BKx, pos.BKy,
             pos.WKx, pos.WKy,
             pos.WRx, pos.WRy
             );
-        printf("\n");
+        //printf("\n");
     }
+    fclose(f);
     printf("Number of legit moves = %d\n", legitMoves);
 }
 
@@ -1499,7 +1509,7 @@ unsigned main(unsigned argc, char **argv) {
 
     seconds_curr = time (NULL);
     
-    PrintTable(LookUpTable);
+    PrintTable(LookUpTable, false);
 
     free(LookUpTable);
 
