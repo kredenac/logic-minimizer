@@ -1,5 +1,8 @@
 # preprocessing c table into something more managable
 from pyeda.inter import *
+import pyeda
+
+
 # only white figures movement are of concern
 # isWhiteTurn, isRookCaptured, BKx, BKy, WKx, WKy, WRx, WRy
 lookup = {}

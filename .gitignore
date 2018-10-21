@@ -1,6 +1,7 @@
 # Prerequisites
 *.d
 
+__pycache__
 .vscode
 
 # Object files
