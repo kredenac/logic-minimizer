@@ -100,7 +100,6 @@ def main(fin, fout):
     return 0
 
 def minimize(inputFile, outputFile):
-    sys.stdout = open(outputFile, "w")
     main(inputFile, outputFile)
 
 

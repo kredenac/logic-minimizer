@@ -6,14 +6,26 @@ import pyeda
 lookup = {}
 BOARD_SIZE = 3
 
-MOVE_BIT_LENGTH = 3
+# number of bits for coding the direction
+UDLR_BITS = 4
+
+# is tracking of move fields in 2 directions or 1
+NUM_DIR_MOVES = 2
+
+POS_BIT_LEN = 3
 if BOARD_SIZE <=4:
-    MOVE_BIT_LENGTH = 2
+    POS_BIT_LEN = 2
 elif BOARD_SIZE <= 8:
-    MOVE_BIT_LENGTH = 3
+    POS_BIT_LEN = 3
 else:
     raise ValueError('Not accepting board sizes above 8')
 
+# 6, for each of three pieces and their x and y axis
+TOTAL_KEY_LEN = 6 * POS_BIT_LEN 
+# Length of codomain that lookup table maps to king bits
+TOTAL_VAL_LEN = UDLR_BITS
+# rook bits
+TOTAL_VAL_LEN += UDLR_BITS + NUM_DIR_MOVES * POS_BIT_LEN
 #positions in initial raed table
 BKx = 2
 BKy = 3
@@ -43,16 +55,23 @@ with open('chessDict.txt', 'r') as f:
 print('finished!')
 print("Items read = ", len(lookup))
 
+# N E W code
 # maps from current game state into optimal move
 # state -> move
+# key: NUM_BIT_LENGTH * 6, 6 for BKx, BKy, WKx, Wky, Wrx, Wry = 18 bits
+# value: up, down left, right each 1 bit for king
+#   up, down, left, right each 1 bit for rook + num bits x2 for how many fields (first x then y axis)
+# kup, kdwn, kleft, kright, rup, rdwn, rlft, rrght, x3, x2, x1, y3, y2, y1
+
+# O L D
 # key: 3 bits for each BKx, BKy, WKx, Wky, Wrx, Wry = 18 bits
 # value: 1 bit king/rook, up, down, left, right, 2 bits - how many times 
 bitLookup = {}
 
 # returns a list of bools indicating the number
 def numberIntoBits(num):
-    return [i == num for i in range(BOARD_SIZE)]
-    #return bin(num)[2:].zfill(8)
+    #return [i == num for i in range(BOARD_SIZE)]
+    return bin(num)[2:].zfill(POS_BIT_LEN)
 
 #returns true if king played. considering the table, its only false when rook played
 def didKingPlay(key, value):
@@ -87,46 +106,47 @@ def boolList2BinString(lst):
 
 for key, val in lookup.items():
     keyBits = numberIntoBits(key[BKx])
-    keyBits.extend(numberIntoBits(key[BKy]) )
-    keyBits.extend(numberIntoBits(key[WKx]) )
+    keyBits += numberIntoBits(key[BKy]) 
+    keyBits += numberIntoBits(key[WKx]) 
     tmp = numberIntoBits(key[WKy])
-    keyBits.extend( tmp )
-    keyBits.extend(numberIntoBits(key[WRx]) )
-    keyBits.extend(numberIntoBits(key[WRy]) )
+    keyBits += tmp 
+    keyBits += numberIntoBits(key[WRx]) 
+    keyBits += numberIntoBits(key[WRy]) 
     
-    valueBits = []
+    valueBits = ''
     isKing = didKingPlay(key, val)
-    valueBits.append(isKing)
 
     if isKing:
-        valueBits.extend(getKingDirection(key, val))
-        # king always moves one field
-        valueBits.extend([True, False])
+        valueBits += boolList2BinString( getKingDirection(key, val) )
+        # fill with 0s on the right for rook bits
+        valueBits = valueBits.ljust(TOTAL_VAL_LEN, '0')
+        #print("king valueBits len", len(valueBits))
     else:
         up,down,left,right,distance = getRookDirectionAndDistance(key, val)
-        valueBits.extend([up,down,left,right])
-        # this is fine for a 3x3, but change it for a larger board
-        distanceBits = [False, False]
-        distanceBits[distance - 1] = True
-        valueBits.extend(distanceBits)
-    
-    strKey = boolList2BinString(keyBits)
-    #print("original key=",key)
-    #print("keyBits = ", "[BKx1,  Bkx2,  bkx3,  bky1,  bky2,  bky3,  wkx1,  wkx2,  wkx3,  wky1,  wky2,  wky3,  wrx1,  wrx2,  wrx3,  wry1,  wry2,  wry3]") 
-    #print("keyBits = ", keyBits, "strKey = ", strKey)
-    #print("tmp = ",tmp, "key[WKy] = ", key[WKy], "key[5] = ", key[5])
-    valueBitString = boolList2BinString(valueBits)
-    bitLookup[strKey] = valueBitString
+        valueBits += boolList2BinString([up,down,left,right])
+        distanceBits = numberIntoBits(distance)
+        if up or down:
+            distanceBits = distanceBits.ljust(POS_BIT_LEN)
+        else:
+            distanceBits = distanceBits.zfill(POS_BIT_LEN)
+        
+        valueBits += distanceBits
+        # fill with 0s on the left for king bits
+        valueBits = valueBits.zfill(TOTAL_VAL_LEN)
+        #print("rook valueBits len", len(valueBits))
 
-print('bitLookup lenght = ', len(bitLookup))
+    bitLookup[keyBits] = valueBits
+
 
 def printTable():
     for key, val in bitLookup.items():
-        chunks, chunk_size = len(key), 3
-        printable = [ key[i:i+chunk_size] for i in range(0, chunks, chunk_size) ]
-        print(" ".join(printable) ,"|", val)
+        print(key, val)
 #printTable()
 #exit()
+BEFORE_MINIMIZATION_LENGTH = len(bitLookup)
+print('bitLookup lenght = ', BEFORE_MINIMIZATION_LENGTH)
+someKey = next(iter(bitLookup))
+print('Key length = ', len(someKey), 'Value length = ', len(bitLookup[someKey]) )
 
 def tableToPla(table, fileName):
     f = open(fileName, "w")
@@ -144,16 +164,33 @@ def tableToPla(table, fileName):
     f.close()
 
 GENERATED_PLA = "mytest.pla"
+print("writing table to pla file...")
 tableToPla(bitLookup, GENERATED_PLA)
 
 from espresso_func import minimize
 
-minimize(GENERATED_PLA, "minimized.pla")
+print("Minimizing pla file...")
+MINIMIZED_OUTPUT_FILE = "minimized.pla"
+minimize(GENERATED_PLA, MINIMIZED_OUTPUT_FILE)
+print(f"Finished!, file saved as {MINIMIZED_OUTPUT_FILE}.")
+
+def analyzeOutput():
+    numLines = 0
+    countDontCare = 0
+    with open(MINIMIZED_OUTPUT_FILE, 'r') as f:
+        for i, l in enumerate(f):
+            countDontCare += l.count("-")
+            numLines += 1
+    numSkipLines = 5
+    numLines -= numSkipLines
+    print(f"Before minimization length = {BEFORE_MINIMIZATION_LENGTH}")
+    print(f"After minimization length = {numLines}, dont cares = {countDontCare}.")
+    print(f'total key len = {TOTAL_KEY_LEN}')
+    percentDontCare = countDontCare/ (numLines * TOTAL_KEY_LEN)
+    print(f"That's {percentDontCare}% dont care bits.")
+
+analyzeOutput()  
 # problem: bice previse (nepostojecih) redova, pa ce stringovi
 # sa vrednostima {0,1,-} biti predugi
 # mozda moze ovom espressu da se prosledi ovaj PLA file
-
-# TODO: 
-# 1) DONE create boolean representation of key and value
-# 2) export it as a PLA file
-# 3) run espresso minimizer
+# po starom je smanjio na 45, po ovom na 51
