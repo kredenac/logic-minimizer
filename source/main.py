@@ -1,12 +1,19 @@
 # preprocessing c table into something more managable
-from pyeda.inter import *
 import pyeda
-
 
 # only white figures movement are of concern
 # isWhiteTurn, isRookCaptured, BKx, BKy, WKx, WKy, WRx, WRy
 lookup = {}
 BOARD_SIZE = 3
+
+MOVE_BIT_LENGTH = 3
+if BOARD_SIZE <=4:
+    MOVE_BIT_LENGTH = 2
+elif BOARD_SIZE <= 8:
+    MOVE_BIT_LENGTH = 3
+else:
+    raise ValueError('Not accepting board sizes above 8')
+
 #positions in initial raed table
 BKx = 2
 BKy = 3
@@ -45,10 +52,11 @@ bitLookup = {}
 # returns a list of bools indicating the number
 def numberIntoBits(num):
     return [i == num for i in range(BOARD_SIZE)]
+    #return bin(num)[2:].zfill(8)
 
 #returns true if king played. considering the table, its only false when rook played
 def didKingPlay(key, value):
-    return (key[WKx] == value[WKx] and key[WKy] == value[WKy])
+    return (key[WKx] != value[WKx] or key[WKy] != value[WKy])
 
 def getKingDirection(key, value):
     x1 = key[WKx]
@@ -107,23 +115,45 @@ for key, val in lookup.items():
     #print("keyBits = ", "[BKx1,  Bkx2,  bkx3,  bky1,  bky2,  bky3,  wkx1,  wkx2,  wkx3,  wky1,  wky2,  wky3,  wrx1,  wrx2,  wrx3,  wry1,  wry2,  wry3]") 
     #print("keyBits = ", keyBits, "strKey = ", strKey)
     #print("tmp = ",tmp, "key[WKy] = ", key[WKy], "key[5] = ", key[5])
-    bitLookup[strKey] = valueBits
+    valueBitString = boolList2BinString(valueBits)
+    bitLookup[strKey] = valueBitString
 
 print('bitLookup lenght = ', len(bitLookup))
-for key, val in bitLookup.items():
-    print(key, val)
 
+def printTable():
+    for key, val in bitLookup.items():
+        chunks, chunk_size = len(key), 3
+        printable = [ key[i:i+chunk_size] for i in range(0, chunks, chunk_size) ]
+        print(" ".join(printable) ,"|", val)
+#printTable()
+#exit()
 
+def tableToPla(table, fileName):
+    f = open(fileName, "w")
+    aKey = next(iter(table))
+    aVal = table[aKey]
+    keySize = len(aKey)
+    valSize = len(aVal)
+    print(f".i {keySize}", file=f)
+    print(f".o {valSize}", file=f)
+    numEntries = len(table)
+    print(f".p {numEntries}", file=f)
+    print(".type fr", file=f)
+    for key, val in table.items():
+        print(f"{key} {val}", file=f)
+    f.close()
+
+GENERATED_PLA = "mytest.pla"
+tableToPla(bitLookup, GENERATED_PLA)
+
+from espresso_func import minimize
+
+minimize(GENERATED_PLA, "minimized.pla")
 # problem: bice previse (nepostojecih) redova, pa ce stringovi
 # sa vrednostima {0,1,-} biti predugi
 # mozda moze ovom espressu da se prosledi ovaj PLA file
 
 # TODO: 
-# 1) create boolean representation of key and value
-# 2) fill in the blanks from illegal moves - or just insert - when they aren't present
-# 3) create output strings for second arg of truthtable()
-# 4) run espresso minimizer
-#>>> X = ttvars('x', 4)
-#>>> f1 = truthtable(X, "0000011111------") #first output bit
-#>>> f2 = truthtable(X, "0001111100------") #second output bit...
-#>>> f1m, f2m = espresso_tts(f1, f2)
+# 1) DONE create boolean representation of key and value
+# 2) export it as a PLA file
+# 3) run espresso minimizer
