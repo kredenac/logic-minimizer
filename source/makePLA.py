@@ -1,10 +1,11 @@
 # preprocessing c table into something more managable
 import pyeda
 
+
 # only white figures movement are of concern
 # isWhiteTurn, isRookCaptured, BKx, BKy, WKx, WKy, WRx, WRy
 lookup = {}
-BOARD_SIZE = 8
+BOARD_SIZE = 3
 
 # number of bits for coding the direction
 UDLR_BITS = 4
@@ -128,13 +129,18 @@ for key, val in lookup.items():
         valueBits += boolList2BinString([up,down,left,right])
         distanceBits = numberIntoBits(distance)
         if up or down:
-            distanceBits = distanceBits.ljust(POS_BIT_LEN)
+            #print(f"valueBits = {valueBits}")
+            #print(f"distanceBits old = {distanceBits}")
+            distanceBits = distanceBits.ljust(POS_BIT_LEN * 2, '0')
+            #print(f"distanceBits new = {distanceBits}")
         else:
-            distanceBits = distanceBits.zfill(POS_BIT_LEN)
+            distanceBits = distanceBits.zfill(POS_BIT_LEN * 2)
         
         valueBits += distanceBits
         # fill with 0s on the left for king bits
         valueBits = valueBits.zfill(TOTAL_VAL_LEN)
+        if up or down:
+            print("UP or DOWN : ", valueBits)
         #print("rook valueBits len", len(valueBits))
 
     bitLookup[keyBits] = valueBits
@@ -170,6 +176,31 @@ print("writing table to pla file...")
 tableToPla(bitLookup, GENERATED_PLA)
 
 MINIMIZED_OUTPUT_FILE = f"minimized{BOARD_SIZE}x{BOARD_SIZE}.pla"
+#print(f"Saved to {MINIMIZED_OUTPUT_FILE}")
+
+def writeCsv(table):
+    print("writin csv")
+    import csv
+    fieldnames = ['BKX1', 'BKX2', 'BKY1', 'BKY2', 'WKX1', 'WKX2', 'WKY1', 'WKY2', 'WRX1', 'WRX2', 'WRY1', 'WRY2']
+    fieldnames.extend(['KU', 'KD', 'KL', 'KR', 'RU', 'RD', 'RL', 'RR', 'RX1', 'RX2', 'RY1', 'RY2'])
+
+    # newline='' is for windows not to put newlines after each row
+    with open(f"original{BOARD_SIZE}x{BOARD_SIZE}.csv", 'w', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        writer.writeheader()
+        for key, val in table.items():
+            row = {}
+            # write a row, taking items from key first, then from val
+            for i, item in enumerate(fieldnames):
+                if i < TOTAL_KEY_LEN:
+                    row[item] = item if key[i] == '1' else "~" + item
+                else:
+                    row[item] = item if val[i - TOTAL_KEY_LEN] == '1' else "~" + item
+            writer.writerow(row)
+    print("finished writing csv")
+
+writeCsv(bitLookup)
 
 def analyzeOutput():
     numLines = 0
@@ -187,8 +218,3 @@ def analyzeOutput():
     print(f"That's {percentDontCare}% dont care bits.")
 
 print("Finished.")
-#analyzeOutput()  
-# problem: bice previse (nepostojecih) redova, pa ce stringovi
-# sa vrednostima {0,1,-} biti predugi
-# mozda moze ovom espressu da se prosledi ovaj PLA file
-# po starom je smanjio na 45, po ovom na 51

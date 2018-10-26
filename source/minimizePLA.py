@@ -10,7 +10,7 @@ def countLines():
     numLines -= numSkipLines
     return numLines
 
-BOARD_SIZE = 8
+BOARD_SIZE = 3
 GENERATED_PLA = f"original{BOARD_SIZE}x{BOARD_SIZE}.pla"
 print(f"Minimizing {GENERATED_PLA} file...")
 MINIMIZED_OUTPUT_FILE = f"minimized{BOARD_SIZE}x{BOARD_SIZE}.pla"

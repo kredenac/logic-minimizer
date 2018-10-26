@@ -1,0 +1,84 @@
+
+{
+    "version":"3.5.3.v201804031105",
+    "created":"2018-10-26 16:19",
+    "nodestats":{
+        "nodes":[
+            {
+                "id":"org.knime.base.node.mine.subgroupminer.SubgroupMinerFactory2#Association Rule Learner",
+                "nrexecs":10,
+                "nrfails":0,
+                "exectime":122,
+                "nrcreated":1,
+                "successor":"org.knime.base.node.preproc.filter.row.RowFilterNodeFactory#Row Filter"
+            },
+            {
+                "id":"org.knime.base.node.io.csvreader.CSVReaderNodeFactory#CSV Reader",
+                "nrexecs":2,
+                "nrfails":3,
+                "exectime":205,
+                "nrcreated":2,
+                "successor":"org.knime.base.collection.list.create2.CollectionCreate2NodeFactory#Create Collection Column"
+            },
+            {
+                "id":"org.knime.base.node.preproc.bitvector.create.CreateBitVectorNodeFactory#Create Bit Vector",
+                "nrexecs":0,
+                "nrfails":0,
+                "exectime":0,
+                "nrcreated":1,
+                "successor":"n/a"
+            },
+            {
+                "id":"org.knime.base.node.preproc.groupby.GroupByNodeFactory#GroupBy",
+                "nrexecs":0,
+                "nrfails":0,
+                "exectime":0,
+                "nrcreated":1,
+                "successor":"n/a"
+            },
+            {
+                "id":"org.knime.base.collection.list.create2.CollectionCreate2NodeFactory#Create Collection Column",
+                "nrexecs":2,
+                "nrfails":0,
+                "exectime":24,
+                "nrcreated":1,
+                "successor":"org.knime.base.node.jsnippet.JavaSnippetNodeFactory#Java Snippet"
+            },
+            {
+                "id":"org.knime.base.node.rules.engine.RuleEngineNodeFactory#Rule Engine",
+                "nrexecs":1,
+                "nrfails":0,
+                "exectime":5,
+                "nrcreated":1,
+                "successor":"n/a"
+            },
+            {
+                "id":"org.knime.base.node.jsnippet.JavaSnippetNodeFactory#Java Snippet",
+                "nrexecs":5,
+                "nrfails":0,
+                "exectime":199,
+                "nrcreated":1,
+                "successor":"org.knime.base.node.mine.subgroupminer.SubgroupMinerFactory2#Association Rule Learner"
+            },
+            {
+                "id":"org.knime.base.node.preproc.filter.row.RowFilterNodeFactory#Row Filter",
+                "nrexecs":8,
+                "nrfails":0,
+                "exectime":17,
+                "nrcreated":1,
+                "successor":"org.knime.base.node.preproc.filter.row.RowFilterNodeFactory#Row Filter"
+            }
+        ],
+        "metaNodes":{
+        },
+        "wrappedNodes":{
+        }
+    },
+    "uptime":8450376,
+    "workflowsOpened":0,
+    "remoteWorkflowsOpened":0,
+    "launches":1,
+    "timeSinceLastStart":8450376,
+    "crashes":0,
+    "properlyShutDown":true
+}
