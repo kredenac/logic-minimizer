@@ -50,10 +50,12 @@ def main():
     filteredLookup =  filterTable(bitLookup, r"1..1........")
     printTable(filteredLookup)
 
+    tableToCnf(filteredLookup)
     #MINIMIZED_OUTPUT_FILE = f"minimized{BOARD_SIZE}x{BOARD_SIZE}.pla"
     #print(f"Saved to {MINIMIZED_OUTPUT_FILE}")
 
     # writeCsv(bitLookup)
+
     print("Finished.")
 
     
@@ -218,18 +220,33 @@ def analyzeOutput(outputFile):
     numLines = 0
     countDontCare = 0
     with open(outputFile, 'r') as f:
-        for i, l in enumerate(f):
+        for _, l in enumerate(f):
             countDontCare += l.count("-")
             numLines += 1
     numSkipLines = 5
     numLines -= numSkipLines
-    print(f"Before minimization length = {BEFORE_MINIMIZATION_LENGTH}")
+    #print(f"Before minimization length = {BEFORE_MINIMIZATION_LENGTH}")
     print(f"After minimization length = {numLines}, dont cares = {countDontCare}.")
     print(f'total key len = {TOTAL_KEY_LEN}')
     percentDontCare = countDontCare/ (numLines * TOTAL_KEY_LEN)
     print(f"That's {percentDontCare}% dont care bits.")
 
-
+def tableToCnf(table):
+    from sympy.logic import POSform
+    from sympy import symbols    
+    miniterms = []
+    for k in table.keys():
+        bits = [int(c) for c in k] 
+        miniterms.append(bits)
+    # POSform function wants dontcares as a list,
+    # but that's too much...
+    symbolsArg =  " ".join([str(i) for i in range(TOTAL_KEY_LEN) ])
+    symbolsTuple = symbols(symbolsArg)
+    symbols = list(symbolsTuple)
+    print("Calculating POSform...")
+    posform = POSform(symbols, miniterms)
+    print("Printing posform")
+    print(posform)
 
 
 if __name__ == "__main__":
