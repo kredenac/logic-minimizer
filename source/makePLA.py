@@ -232,22 +232,99 @@ def analyzeOutput(outputFile):
     print(f"That's {percentDontCare}% dont care bits.")
 
 def tableToCnf(table):
-    from sympy.logic import POSform
     from sympy import symbols    
-    miniterms = []
-    for k in table.keys():
-        bits = [int(c) for c in k] 
-        miniterms.append(bits)
-    # POSform function wants dontcares as a list,
-    # but that's too much...
+    dnf = None
     symbolsArg =  " ".join([str(i) for i in range(TOTAL_KEY_LEN) ])
     symbolsTuple = symbols(symbolsArg)
     symbols = list(symbolsTuple)
-    print("Calculating POSform...")
-    posform = POSform(symbols, miniterms)
-    print("Printing posform")
-    print(posform)
+    print("calculating dnf")
+    for k in table.keys():
+        products = None
+        for i, s in enumerate(k):
+            prod = symbols[i] if s =='1' else ~symbols[i]
+            products = prod if products is None else products & prod
+        dnf = products if dnf is None else dnf | products
+    print("finished dnf")
+    #print(dnf)
+    s = str(dnf)
+    print("dnf str len = ",len(s))
+    from sympy.logic.boolalg import to_cnf, simplify_logic
+    simplifiedDnf = simplify_logic(dnf)
+    s = str(simplifiedDnf)
+    print("simplified dnf str len = ",len(s))
+    exit()
+    print("calculating cnf from dnf")
+    cnf = to_cnf(dnf)
+    s = str(cnf)
+    print("cnf str len = ", len(s))
 
+import string
+
+class Formula:
+    def __init__(self, fixed, merged = [], bstring = None):
+        # set of fixed bits. Intended usage: (a, A, b...)
+        if bstring is not None:
+            # expecting string with only 0s or 1s
+            lower = string.ascii_lowercase
+            upper = string.ascii_uppercase
+            fixed = set()
+            for i, chr in enumerate(bstring):
+                elem = lower[i] if chr == '0' else upper[i]
+                fixed.add(elem)
+
+        self.fixed = set(fixed)
+        # list of merged formulas
+        self.merged = merged
+
+    def __eq__(self, other):
+        if not isinstance(other, Formula):
+            return False
+        if self.fixed != other.fixed:
+            return False
+        if len(self.merged) == 0 and len(other.merged) == 0:
+            return True
+        for i in self.merged:
+            if i not in other.merged:
+                return False
+        return True
+
+
+    def similarity(self, other):
+        d = len(self.fixed.intersection(other.fixed))
+        for i in self.merged:
+            if i in other.merged:
+                d += i.size()
+        return d
+                
+
+    def size(self):
+        count = len(self.fixed)
+        for i in self.merged:
+            count += i.size()
+        return count
+    
+    def canMerge(self, other):
+        lowerA = [i.lower for i in self.fixed]
+        lowerB = [i.lower for i in other.fixed]
+        inter = set(lowerA).intersection(set(lowerB))
+        # they can merge if they have the same fixed bits
+        if len(inter) == len(lowerA):
+            return True
+        # or if they have same merged block
+        for i in self.merged:
+            if i in other.merged:
+                return True
+        return False
+
+    def merge(self, other):
+        # its expected that canMerge(self, other) would return true
+        aMinusB = self.fixed - other.fixed
+        bMinusA = other.fixed - self.fixed
+        inter = self.fixed.intersection(other.fixed)
+        a = Formula(aMinusB)
+        b = Formula(bMinusA)
+        x = Formula(inter, [a, b])
+        return x
 
 if __name__ == "__main__":
     main()
