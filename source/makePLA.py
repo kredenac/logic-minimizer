@@ -48,9 +48,9 @@ def main():
     tableToPla(bitLookup, GENERATED_PLA)
 
     filteredLookup =  filterTable(bitLookup, r"1..1........")
-    printTable(filteredLookup)
-
-    tableToCnf(filteredLookup)
+    #printTable(filteredLookup)
+    testFormula(filteredLookup)
+    #tableToCnf(filteredLookup)
     #MINIMIZED_OUTPUT_FILE = f"minimized{BOARD_SIZE}x{BOARD_SIZE}.pla"
     #print(f"Saved to {MINIMIZED_OUTPUT_FILE}")
 
@@ -260,8 +260,15 @@ def tableToCnf(table):
 
 import string
 
+def testFormula(table):
+    f = None
+    for k in table.keys():
+        f = Formula(bstring=k)
+        break
+    print(f)
+
 class Formula:
-    def __init__(self, fixed, merged = [], bstring = None):
+    def __init__(self, fixed = None, merged = [], bstring = None):
         # set of fixed bits. Intended usage: (a, A, b...)
         if bstring is not None:
             # expecting string with only 0s or 1s
@@ -272,7 +279,7 @@ class Formula:
                 elem = lower[i] if chr == '0' else upper[i]
                 fixed.add(elem)
 
-        self.fixed = set(fixed)
+        self.fixed = set(fixed) if fixed is not None else set()
         # list of merged formulas
         self.merged = merged
 
@@ -304,17 +311,19 @@ class Formula:
         return count
     
     def canMerge(self, other):
-        lowerA = [i.lower for i in self.fixed]
-        lowerB = [i.lower for i in other.fixed]
+        lowerA = [i.lower() for i in self.fixed]
+        lowerB = [i.lower() for i in other.fixed]
         inter = set(lowerA).intersection(set(lowerB))
         # they can merge if they have the same fixed bits
         if len(inter) == len(lowerA):
             return True
-        # or if they have same merged block
+        # or if they have same merged blocks
+        allSame = True
         for i in self.merged:
             if i in other.merged:
-                return True
-        return False
+                allSame = False
+                break
+        return allSame
 
     def merge(self, other):
         # its expected that canMerge(self, other) would return true
@@ -323,8 +332,38 @@ class Formula:
         inter = self.fixed.intersection(other.fixed)
         a = Formula(aMinusB)
         b = Formula(bMinusA)
-        x = Formula(inter, [a, b])
+        #aAndB = Formula(None, [a, b])
+        merged = [a, b]
+        merged.extend(self.merged)
+        x = Formula(inter, merged)
         return x
+    
+    def __str__(self):
+        srtd = sorted(list(self.fixed), key=str.lower)
+        if (len(srtd) == 0 and len(self.merged) == 0):
+            return "empty"
+        s = ""
+        if len(srtd) > 0:
+            s = "(" + " ".join(srtd) + ")"
+        if len(self.merged) > 0:
+            s +=  " [" 
+            s += " or ".join(list(map(str, self.merged)))
+            s +=  "] "
+        return s
 
+# TEST
+a = Formula(bstring="111100001111")
+b = Formula(bstring="111101001111")
+anb = a.merge(b)
+print(anb)
+x = Formula(bstring="011100001111")
+y = Formula(bstring="011101001111")
+xny = x.merge(y)
+print(xny)
+print(anb.merge(xny))
+
+
+exit()
 if __name__ == "__main__":
     main()
+
