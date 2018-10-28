@@ -48,9 +48,9 @@ def main():
     tableToPla(bitLookup, GENERATED_PLA)
 
     filteredLookup =  filterTable(bitLookup, r"1..1........")
+    print("Filtered length = ", len(filteredLookup))
     #printTable(filteredLookup)
     testFormula(filteredLookup)
-    #tableToCnf(filteredLookup)
     #MINIMIZED_OUTPUT_FILE = f"minimized{BOARD_SIZE}x{BOARD_SIZE}.pla"
     #print(f"Saved to {MINIMIZED_OUTPUT_FILE}")
 
@@ -232,6 +232,7 @@ def analyzeOutput(outputFile):
     print(f"That's {percentDontCare}% dont care bits.")
 
 def tableToCnf(table):
+    # this is too slow, nothing can be done with it
     from sympy import symbols    
     dnf = None
     symbolsArg =  " ".join([str(i) for i in range(TOTAL_KEY_LEN) ])
@@ -252,20 +253,12 @@ def tableToCnf(table):
     simplifiedDnf = simplify_logic(dnf)
     s = str(simplifiedDnf)
     print("simplified dnf str len = ",len(s))
-    exit()
     print("calculating cnf from dnf")
     cnf = to_cnf(dnf)
     s = str(cnf)
     print("cnf str len = ", len(s))
 
 import string
-
-def testFormula(table):
-    f = None
-    for k in table.keys():
-        f = Formula(bstring=k)
-        break
-    print(f)
 
 class Formula:
     def __init__(self, fixed = None, merged = [], bstring = None):
@@ -280,7 +273,7 @@ class Formula:
                 fixed.add(elem)
 
         self.fixed = set(fixed) if fixed is not None else set()
-        # list of merged formulas
+        # list of list of formulas, that is, product of sums of products
         self.merged = merged
 
     def __eq__(self, other):
@@ -315,12 +308,16 @@ class Formula:
         lowerB = [i.lower() for i in other.fixed]
         inter = set(lowerA).intersection(set(lowerB))
         # they can merge if they have the same fixed bits
-        if len(inter) == len(lowerA):
+        if len(inter) == len(lowerA) and len(inter) == len(lowerB):
             return True
         # or if they have same merged blocks
         allSame = True
         for i in self.merged:
-            if i in other.merged:
+            if i not in other.merged:
+                allSame = False
+                break
+        for i in other.merged:
+            if i not in self.merged:
                 allSame = False
                 break
         return allSame
@@ -330,12 +327,15 @@ class Formula:
         aMinusB = self.fixed - other.fixed
         bMinusA = other.fixed - self.fixed
         inter = self.fixed.intersection(other.fixed)
-        a = Formula(aMinusB)
-        b = Formula(bMinusA)
-        #aAndB = Formula(None, [a, b])
-        merged = [a, b]
-        merged.extend(self.merged)
-        x = Formula(inter, merged)
+        merged = []
+        if len(aMinusB) != 0:
+            merged.append(Formula(aMinusB))
+        if len(bMinusA) != 0:
+            merged.append(Formula(bMinusA))
+        # prevent the list of having formulas instead of list of formulas
+        merged = [merged] if len(merged) != 0 else merged
+        unique_data = self.naiveUniqueJoin(merged, self.merged, other.merged)
+        x = Formula(inter, unique_data)
         return x
     
     def __str__(self):
@@ -346,24 +346,97 @@ class Formula:
         if len(srtd) > 0:
             s = "(" + " ".join(srtd) + ")"
         if len(self.merged) > 0:
-            s +=  " [" 
-            s += " or ".join(list(map(str, self.merged)))
-            s +=  "] "
+            #self.merged is a list of lists of Formula
+            # [ [a or A] and [b c or b C ] and [D or d]]
+            s += self._listOfListsToStr()
         return s
 
-# TEST
-a = Formula(bstring="111100001111")
-b = Formula(bstring="111101001111")
-anb = a.merge(b)
-print(anb)
-x = Formula(bstring="011100001111")
-y = Formula(bstring="011101001111")
-xny = x.merge(y)
-print(xny)
-print(anb.merge(xny))
+    # used for self.merged    
+    def _listOfListsToStr(self):
+        s = "["
+        for subList in self.merged:
+            s += "["
+            s += " or ".join(list(map(str, subList)))
+            s += "] "
+        s += "] "
+        return s
+
+    # for unhashables
+    # expecting a,b,c to be list of lists of formula
+    def naiveUniqueJoin(self, a, b, c):
+        res = a
+        for i in b:
+            if i not in res:
+                res.extend(b)
+        for i in c:
+            if i not in res:
+                res.extend(c)
+        return res
+        
 
 
-exit()
+def testFormula(table):
+    # TEST
+    a = Formula(bstring="111100001111")
+    b = Formula(bstring="111101001111")
+    anb = a.merge(b)
+    print(anb)
+    x = Formula(bstring="011100001111")
+    y = Formula(bstring="011101001111")
+    xny = x.merge(y)
+    print(xny)
+    print(anb.merge(xny))
+    twoa = Formula(bstring="111100001111")
+    twob = Formula(bstring="111101101111")
+    treci = Formula(bstring="111101001111")
+    ttab = twoa.merge(twob)
+    print(ttab)
+    print(treci)
+    print(ttab.canMerge(treci), ttab.merge(treci))
+    twoc = Formula(bstring="101100001111")
+    twod = Formula(bstring="101101101111")
+    ttcd = twoc.merge(twod)
+    print("###")
+    print(ttab)
+    print(ttcd)
+    print(ttcd.merge(ttab ) )
+    print("###")
+
+    tableList = []
+    # make a list of Formulas from table
+    for k in table.keys():
+        f = Formula(bstring=k)
+        tableList.append(f)
+
+    # one iteration of pairing up    
+    # pair up two closest 'rows'
+    length = len(tableList)
+    for i in range(len(tableList) - 1):
+        # searching for max similarity
+        bestCost = 0
+        index = None
+        for j in range(i + 1, len(tableList)):
+            similarity = tableList[i].similarity(tableList[j])
+            if similarity > bestCost:
+                index = j
+                bestCost = similarity
+        if index is not None:
+            # pair them up
+            print("pairing", tableList[i])
+            print("with", tableList[index])
+            paired = tableList[i].merge(tableList[index])
+            print("paired = ", paired)
+            # store it instead of i, and delete j
+            tableList[i] = paired
+            if index != len(tableList) - 1:
+                tableList[index] = tableList.pop()
+            else:
+                tableList.pop()
+    for i in tableList:
+        print(i)
+    print("List len before = ", length, "List len after merging = ", len(tableList))
+
+
 if __name__ == "__main__":
     main()
 
