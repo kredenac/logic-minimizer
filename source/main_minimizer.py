@@ -207,8 +207,6 @@ def writeCsv(table):
             writer.writerow(row)
     print("finished writing csv")
 
-
-
 def analyzeOutput(outputFile):
     numLines = 0
     countDontCare = 0
@@ -307,7 +305,6 @@ class Formula:
         if len(inter) == len(lowerA) and len(inter) == len(lowerB):
             return True
         # or if they have same merged blocks
-        #### FIXME is this even legit? does it make sense to pair them if they dont have same fixed bits?
         allSame = True
         for i in self.merged:
             if i not in other.merged:
@@ -346,17 +343,20 @@ class Formula:
         if len(self.merged) > 0:
             #self.merged is a list of lists of Formula
             # [ [a or A] and [b c or b C ] and [D or d]]
+            s += " and "
             s += self._listOfListsToStr()
         return s
 
     # used for self.merged    
     def _listOfListsToStr(self):
         s = "["
-        for subList in self.merged:
+        for i, subList in enumerate(self.merged):
             s += "["
             s += " or ".join(list(map(str, subList)))
-            s += "] "
-        s += "] "
+            s += "]"
+            if i != len(self.merged) - 1:
+                s += " and "
+        s += "]"
         return s
 
     # for unhashables
@@ -420,6 +420,7 @@ def mergeFormulas(table):
         f = Formula(bstring=k)
         tableList.append(f)
 
+    oldLength = len(tableList)
     # while list is getting smaller
     iteration = 0
     while True:
@@ -427,14 +428,17 @@ def mergeFormulas(table):
         print("iter",iteration)
         oldSize = len(tableList)
         tableList = onePairingIteration(tableList)
+        #tableList = onlyPairBestOnes(tableList)
         newSize = len(tableList)
         if iteration == 3:
-            break # tmp
+            pass
+            #break # tmp
         if newSize == oldSize:
             break
 
     for i in tableList:
         print(i)
+    print("List len before = ", oldLength, "List len after merging = ", len(tableList))
 
 def onePairingIteration(tableList):
     # one iteration of pairing up    
@@ -453,21 +457,41 @@ def onePairingIteration(tableList):
                 index = j
                 bestCost = similarity
         if index is not None:
-            # pair them up
-            #print("pairing", tableList[i])
-            #print("with", tableList[index])
             paired = tableList[i].merge(tableList[index])
-            #print("paired = ", paired)
             # store it instead of i, and delete j
             tableList[i] = paired
             if index != len(tableList) - 1:
                 tableList[index] = tableList.pop()
             else:
                 tableList.pop()
-    #for i in tableList:
-    #   print(i)
     print("List len before = ", length, "List len after merging = ", len(tableList))
     return tableList
+
+def onlyPairBestOnes(tableList):
+    totalBestCost = 0
+    indexi = None
+    indexj = None
+    length = len(tableList)
+    for i in range(length - 1):
+        for j in range(i + 1, length):
+            canMerge = tableList[i].canMerge(tableList[j])
+            if canMerge is False:
+                continue
+            similarity = tableList[i].similarity(tableList[j])
+            if similarity > totalBestCost:
+                indexi = i
+                indexj = j
+                totalBestCost = similarity
+    if indexi is not None:
+        paired = tableList[indexi].merge(tableList[indexj])
+        # store it instead of i, and delete j
+        tableList[indexi] = paired
+        if indexj != len(tableList) - 1:
+            tableList[indexj] = tableList.pop()
+        else:
+            tableList.pop()
+    return tableList
+    
 
 if __name__ == "__main__":
     main()
