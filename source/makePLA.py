@@ -50,14 +50,13 @@ def main():
     filteredLookup =  filterTable(bitLookup, r"1..1........")
     print("Filtered length = ", len(filteredLookup))
     #printTable(filteredLookup)
-    testFormula(filteredLookup)
+    mergeFormulas(filteredLookup)
     #MINIMIZED_OUTPUT_FILE = f"minimized{BOARD_SIZE}x{BOARD_SIZE}.pla"
     #print(f"Saved to {MINIMIZED_OUTPUT_FILE}")
 
     # writeCsv(bitLookup)
 
     print("Finished.")
-
     
 def readInputFile():
     print ("reading file...")
@@ -76,8 +75,6 @@ def readInputFile():
                 lookup[key] = tup
     print('finished!')
     print("Items read = ", len(lookup))
-
-
 
 # N E W code
 # maps from current game state into optimal move
@@ -162,13 +159,11 @@ def convertToBits():
 
         bitLookup[keyBits] = valueBits
 
-
 def printTable(table):
     print("printing table.")
     for key, val in table.items():
         print(key, val)
     print(f"Table has {len(table)} items.")
-
 
 
 def filterTable(table, filterString):
@@ -189,8 +184,6 @@ def tableToPla(table, fileName):
     for key, val in table.items():
         print(f"{key} {val}", file=f)
     f.close()
-
-
 
 def writeCsv(table):
     print("writing csv")
@@ -263,6 +256,7 @@ import string
 class Formula:
     def __init__(self, fixed = None, merged = [], bstring = None):
         # set of fixed bits. Intended usage: (a, A, b...)
+        # TODO maybe merged shouldnt be a list of list of formulas...
         if bstring is not None:
             # expecting string with only 0s or 1s
             lower = string.ascii_lowercase
@@ -293,7 +287,9 @@ class Formula:
         d = len(self.fixed.intersection(other.fixed))
         for i in self.merged:
             if i in other.merged:
-                d += i.size()
+                # this probably isn't the best metric,
+                # maybe number of products within this lists element
+                d += len(i)
         return d
                 
 
@@ -311,6 +307,7 @@ class Formula:
         if len(inter) == len(lowerA) and len(inter) == len(lowerB):
             return True
         # or if they have same merged blocks
+        #### FIXME is this even legit? does it make sense to pair them if they dont have same fixed bits?
         allSame = True
         for i in self.merged:
             if i not in other.merged:
@@ -334,7 +331,8 @@ class Formula:
             merged.append(Formula(bMinusA))
         # prevent the list of having formulas instead of list of formulas
         merged = [merged] if len(merged) != 0 else merged
-        unique_data = self.naiveUniqueJoin(merged, self.merged, other.merged)
+        unique_data = Formula.naiveUniqueJoin(merged, self.merged)
+        unique_data = Formula.naiveUniqueJoin(unique_data, other.merged)
         x = Formula(inter, unique_data)
         return x
     
@@ -362,21 +360,31 @@ class Formula:
         return s
 
     # for unhashables
-    # expecting a,b,c to be list of lists of formula
-    def naiveUniqueJoin(self, a, b, c):
+    # expecting a,b to be list of lists of formula
+    @staticmethod
+    def naiveUniqueJoin(a, b):
         res = a
-        for i in b:
-            if i not in res:
-                res.extend(b)
-        for i in c:
-            if i not in res:
-                res.extend(c)
+        #!!! if we have [ab or AB] and incoming [aB], then make [ab or aB or AB]
+        # each sublist is [ab or Ab...]
+        for isublist in b:
+            # see if these bits already exist [bits or BiTs or ...]
+            whichBits = {bit.lower() for bit in isublist[0].fixed}
+            foundMatch = False # should add whole isublist to result?
+            for jsublist in res:
+                alreadyBits = {bit.lower() for bit in jsublist[0].fixed}
+                # if this is that group of bits
+                if alreadyBits == whichBits:
+                    foundMatch = True
+                    # append those that are not already in it
+                    # When using only 'if', put 'for' in the beginning
+                    jsublist.extend([f for f in isublist if f not in jsublist ])
+
+            if not foundMatch:
+                res.append(isublist)
         return res
         
-
-
-def testFormula(table):
-    # TEST
+def TestFormula():
+    print("TEST start")
     a = Formula(bstring="111100001111")
     b = Formula(bstring="111101001111")
     anb = a.merge(b)
@@ -385,7 +393,8 @@ def testFormula(table):
     y = Formula(bstring="011101001111")
     xny = x.merge(y)
     print(xny)
-    print(anb.merge(xny))
+    anb_n_xny= anb.merge(xny)
+    print(anb_n_xny)
     twoa = Formula(bstring="111100001111")
     twob = Formula(bstring="111101101111")
     treci = Formula(bstring="111101001111")
@@ -401,13 +410,33 @@ def testFormula(table):
     print(ttcd)
     print(ttcd.merge(ttab ) )
     print("###")
+    print("TEST end")
 
+def mergeFormulas(table):
+    #exit()
     tableList = []
     # make a list of Formulas from table
     for k in table.keys():
         f = Formula(bstring=k)
         tableList.append(f)
 
+    # while list is getting smaller
+    iteration = 0
+    while True:
+        iteration += 1
+        print("iter",iteration)
+        oldSize = len(tableList)
+        tableList = onePairingIteration(tableList)
+        newSize = len(tableList)
+        if iteration == 3:
+            break # tmp
+        if newSize == oldSize:
+            break
+
+    for i in tableList:
+        print(i)
+
+def onePairingIteration(tableList):
     # one iteration of pairing up    
     # pair up two closest 'rows'
     length = len(tableList)
@@ -416,27 +445,29 @@ def testFormula(table):
         bestCost = 0
         index = None
         for j in range(i + 1, len(tableList)):
+            canMerge = tableList[i].canMerge(tableList[j])
+            if canMerge is False:
+                continue 
             similarity = tableList[i].similarity(tableList[j])
             if similarity > bestCost:
                 index = j
                 bestCost = similarity
         if index is not None:
             # pair them up
-            print("pairing", tableList[i])
-            print("with", tableList[index])
+            #print("pairing", tableList[i])
+            #print("with", tableList[index])
             paired = tableList[i].merge(tableList[index])
-            print("paired = ", paired)
+            #print("paired = ", paired)
             # store it instead of i, and delete j
             tableList[i] = paired
             if index != len(tableList) - 1:
                 tableList[index] = tableList.pop()
             else:
                 tableList.pop()
-    for i in tableList:
-        print(i)
+    #for i in tableList:
+    #   print(i)
     print("List len before = ", length, "List len after merging = ", len(tableList))
-
+    return tableList
 
 if __name__ == "__main__":
     main()
-
