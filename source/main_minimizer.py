@@ -240,34 +240,6 @@ def analyzeOutput(outputFile):
     percentDontCare = countDontCare/ (numLines * TOTAL_KEY_LEN)
     print(f"That's {percentDontCare}% dont care bits.")
 
-def tableToCnf(table):
-    # this is too slow, nothing can be done with it
-    from sympy import symbols    
-    dnf = None
-    symbolsArg =  " ".join([str(i) for i in range(TOTAL_KEY_LEN) ])
-    symbolsTuple = symbols(symbolsArg)
-    symbols = list(symbolsTuple)
-    print("calculating dnf")
-    for k in table.keys():
-        products = None
-        for i, s in enumerate(k):
-            prod = symbols[i] if s =='1' else ~symbols[i]
-            products = prod if products is None else products & prod
-        dnf = products if dnf is None else dnf | products
-    print("finished dnf")
-    #print(dnf)
-    s = str(dnf)
-    print("dnf str len = ",len(s))
-    from sympy.logic.boolalg import to_cnf, simplify_logic
-    simplifiedDnf = simplify_logic(dnf)
-    s = str(simplifiedDnf)
-    print("simplified dnf str len = ",len(s))
-    print("calculating cnf from dnf")
-    cnf = to_cnf(dnf)
-    s = str(cnf)
-    print("cnf str len = ", len(s))
-
-
 class Formula:
     def __init__(self, fixed = None, merged = [], bstring = None):
         # set of fixed bits. Intended usage: (a, A, b...)
