@@ -2,7 +2,7 @@
 import pyeda
 import os
 import string
-
+import time
 # only white figures movement are of concern
 # isWhiteTurn, isRookCaptured, BKx, BKy, WKx, WKy, WRx, WRy
 lookup = {}
@@ -22,6 +22,13 @@ elif BOARD_SIZE <= 8:
 else:
     raise ValueError('Not accepting board sizes above 8')
 
+# size, diet, venom, legs3, legs2 legs1, europe, dangerous 
+animals = []
+animals.append("1101010") # lion
+animals.append("1111010") # komodo
+animals.append("0110001") # zmija
+animals.append("0011100") # pcela
+
 # 6, for each of three pieces and their x and y axis
 TOTAL_KEY_LEN = 6 * POS_BIT_LEN 
 # Length of codomain that lookup table maps to king bits
@@ -38,11 +45,13 @@ WRy = 7
 
 def main():
     goIntoScriptDir()
+    mergeFormulas(animals, useFaster=True)
+    exit()
     readInputFile()
     convertToBits()
 
     BEFORE_MINIMIZATION_LENGTH = len(bitLookup)
-    print('before minimization lenght = ', BEFORE_MINIMIZATION_LENGTH)
+    print('before minimization length = ', BEFORE_MINIMIZATION_LENGTH)
     someKey = next(iter(bitLookup))
     print('Key length = ', len(someKey), 'Value length = ', len(bitLookup[someKey]) )
 
@@ -54,7 +63,7 @@ def main():
     filteredLookup =  filterTable(bitLookup, r"1..1..........")
     print("Filtered length = ", len(filteredLookup))
     #printTable(filteredLookup)
-    mergeFormulas(filteredLookup)
+    mergeFormulas(filteredLookup, useFaster=True)
     #MINIMIZED_OUTPUT_FILE = f"minimized{BOARD_SIZE}x{BOARD_SIZE}.pla"
     #print(f"Saved to {MINIMIZED_OUTPUT_FILE}")
 
@@ -262,7 +271,6 @@ def tableToCnf(table):
 class Formula:
     def __init__(self, fixed = None, merged = [], bstring = None):
         # set of fixed bits. Intended usage: (a, A, b...)
-        # TODO maybe merged shouldnt be a list of list of formulas...
         if bstring is not None:
             # expecting string with only 0s or 1s
             lower = string.ascii_lowercase
@@ -450,21 +458,26 @@ def TestFormula():
     print("###")
     print("TEST end")
 
-def mergeFormulas(table):
+def mergeFormulas(table, useFaster):
     tableList = []
-    # make a list of Formulas from table
-    for k in table.keys():
-        f = Formula(bstring=k)
-        tableList.append(f)
+    if isinstance(table, dict):
+        # make a list of Formulas from table
+        for k in table.keys():
+            f = Formula(bstring=k)
+            tableList.append(f)
+    else:
+        tableList = [Formula(bstring=row) for row in table]
 
+    method = onePairingIteration if useFaster else onlyPairBestOnes
     oldLength = len(tableList)
     # while list is getting smaller
     iteration = 0
+    start = time.time()
     while True:
         iteration += 1
         print("iter",iteration)
         oldSize = len(tableList)
-        tableList = onePairingIteration(tableList)
+        tableList = method(tableList)
         #tableList = onlyPairBestOnes(tableList)
         newSize = len(tableList)
         if iteration == 3:
@@ -473,11 +486,14 @@ def mergeFormulas(table):
         if newSize == oldSize:
             break
 
+    end = time.time()
     for i in tableList:
-        #print(i)
+        #continue
         i.simplify()
         print(i)
     print("List len before = ", oldLength, "List len after merging = ", len(tableList))
+    print("Time elpassed = ", end - start)
+
 
 def onePairingIteration(tableList):
     # one iteration of pairing up    

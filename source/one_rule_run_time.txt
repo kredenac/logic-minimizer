@@ -1,0 +1,5 @@
+1000 rows - 5 sec. down to 232 rows
+2000 rows - 20 sec. down to 448 rows 
+3000 rows - 43 sec. down to 627 rows
+4000 rows - 76 sec. down to 818 rows
+5000 rows - 115 sec. down to 1015 rows
