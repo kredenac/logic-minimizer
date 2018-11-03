@@ -1,10 +1,12 @@
 # preprocessing c table into something more managable
 import pyeda
+import os
+import string
 
 # only white figures movement are of concern
 # isWhiteTurn, isRookCaptured, BKx, BKy, WKx, WKy, WRx, WRy
 lookup = {}
-BOARD_SIZE = 4
+BOARD_SIZE = 8
 
 # number of bits for coding the direction
 UDLR_BITS = 4
@@ -35,6 +37,7 @@ WRx = 6
 WRy = 7
 
 def main():
+    goIntoScriptDir()
     readInputFile()
     convertToBits()
 
@@ -43,11 +46,12 @@ def main():
     someKey = next(iter(bitLookup))
     print('Key length = ', len(someKey), 'Value length = ', len(bitLookup[someKey]) )
 
-    GENERATED_PLA = f"original{BOARD_SIZE}x{BOARD_SIZE}.pla"
-    print("writing table to pla file...")
-    tableToPla(bitLookup, GENERATED_PLA)
+    #GENERATED_PLA = f"original{BOARD_SIZE}x{BOARD_SIZE}.pla"
+    #print("writing table to pla file...")
+    #tableToPla(bitLookup, GENERATED_PLA)
 
-    filteredLookup =  filterTable(bitLookup, r"1..1........")
+    # r"0..0........" is for king going up and right
+    filteredLookup =  filterTable(bitLookup, r"1..1..........")
     print("Filtered length = ", len(filteredLookup))
     #printTable(filteredLookup)
     mergeFormulas(filteredLookup)
@@ -57,6 +61,11 @@ def main():
     # writeCsv(bitLookup)
 
     print("Finished.")
+
+def goIntoScriptDir():
+    abspath = os.path.abspath(__file__)
+    dname = os.path.dirname(abspath)
+    os.chdir(dname)
     
 def readInputFile():
     print ("reading file...")
@@ -249,7 +258,6 @@ def tableToCnf(table):
     s = str(cnf)
     print("cnf str len = ", len(s))
 
-import string
 
 class Formula:
     def __init__(self, fixed = None, merged = [], bstring = None):
@@ -278,6 +286,9 @@ class Formula:
         for i in self.merged:
             if i not in other.merged:
                 return False
+        for i in other.merged:
+            if i not in self.merged:
+                return False
         return True
 
 
@@ -287,9 +298,36 @@ class Formula:
             if i in other.merged:
                 # this probably isn't the best metric,
                 # maybe number of products within this lists element
-                d += len(i)
+                d += len(i[0].fixed)
         return d
-                
+
+    def simplify(self):
+        if len(self.merged) == 0:
+            return
+        for disj in self.merged[:]:
+            conjLen = len(disj[0].fixed)
+            # eg. a or A, then remove it 
+            if conjLen * 2 == len(disj):
+                self.merged.remove(disj)
+                continue
+            # ab or AB simplify to a eq b
+            canSimplify = conjLen == 2 and len(disj) == 2
+            if not canSimplify:
+                continue
+            lst1 = list(disj[0].fixed)
+            lst2 = list(disj[1].fixed)
+            a1 = lst1[0].islower()
+            b1 = lst1[1].islower()
+            a2 = lst2[0].islower()
+            b2 = lst2[1].islower()
+            if a1 != a2 and b1 != b2:
+                self.merged.remove(disj)
+                disj = [str(lst1[0]) + " eq "  + str(lst1[1])]
+                self.merged.append(disj)
+            elif a1 != b1 and a2 != b2:
+                self.merged.remove(disj)
+                disj = [str(lst1[0]) + " xor "  + str(lst1[1])]
+                self.merged.append(disj)
 
     def size(self):
         count = len(self.fixed)
@@ -413,7 +451,6 @@ def TestFormula():
     print("TEST end")
 
 def mergeFormulas(table):
-    #exit()
     tableList = []
     # make a list of Formulas from table
     for k in table.keys():
@@ -437,6 +474,8 @@ def mergeFormulas(table):
             break
 
     for i in tableList:
+        #print(i)
+        i.simplify()
         print(i)
     print("List len before = ", oldLength, "List len after merging = ", len(tableList))
 
