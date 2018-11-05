@@ -24,8 +24,8 @@ else:
 
 # size, diet, venom, legs3, legs2 legs1, europe, dangerous 
 animals = []
-animals.append("1101010") # lion
-animals.append("1111010") # komodo
+animals.append("1101000") # lion
+animals.append("1111000") # komodo
 animals.append("0110001") # zmija
 animals.append("0011100") # pcela
 

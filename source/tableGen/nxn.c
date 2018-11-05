@@ -1496,7 +1496,7 @@ unsigned main(unsigned argc, char **argv) {
     _B_INITIALIZATION_DONE=false;
     _B_SETTING_STEPS_DONE=false;
 
-    ComputeOptimalDistancesToWin();
+    //ComputeOptimalDistancesToWin();
     // MeasureDecreases();
     //SetStrategyMoves();
 
@@ -1504,7 +1504,7 @@ unsigned main(unsigned argc, char **argv) {
 
     // TerminationLemma();
 
-    //ComputeStrategyDistancesToWin();
+    ComputeStrategyDistancesToWin();
     // CountStrategySteps();  
 
     seconds_curr = time (NULL);
