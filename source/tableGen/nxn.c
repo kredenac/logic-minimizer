@@ -1498,7 +1498,7 @@ unsigned main(unsigned argc, char **argv) {
 
     //ComputeOptimalDistancesToWin();
     // MeasureDecreases();
-    //SetStrategyMoves();
+    SetStrategyMoves();
 
     // CountMeasureDecreasing();
 
