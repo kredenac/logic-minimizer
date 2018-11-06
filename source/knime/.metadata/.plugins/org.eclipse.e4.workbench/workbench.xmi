@@ -57,14 +57,15 @@
               </children>
             </children>
             <children xsi:type="basic:PartSashContainer" xmi:id="_KcfkqtkqEeim_JExmRxWuA" containerData="7534" selectedElement="_Kcfkq9kqEeim_JExmRxWuA">
-              <children xsi:type="basic:PartSashContainer" xmi:id="_Kcfkq9kqEeim_JExmRxWuA" containerData="7000" selectedElement="_KcfkrNkqEeim_JExmRxWuA" horizontal="true">
+              <children xsi:type="basic:PartSashContainer" xmi:id="_Kcfkq9kqEeim_JExmRxWuA" containerData="7645" selectedElement="_KcfkrNkqEeim_JExmRxWuA" horizontal="true">
                 <children xsi:type="advanced:Placeholder" xmi:id="_KcfkrNkqEeim_JExmRxWuA" elementId="org.eclipse.ui.editorss" containerData="7000" ref="_KcasINkqEeim_JExmRxWuA"/>
                 <children xsi:type="basic:PartStack" xmi:id="_KcfkrdkqEeim_JExmRxWuA" elementId="org.knime.workbench.helpviewMStack" containerData="3000" selectedElement="_KcfkrtkqEeim_JExmRxWuA">
                   <children xsi:type="advanced:Placeholder" xmi:id="_KcfkrtkqEeim_JExmRxWuA" elementId="org.knime.workbench.helpview" ref="_Kce9kdkqEeim_JExmRxWuA"/>
                 </children>
               </children>
-              <children xsi:type="basic:PartSashContainer" xmi:id="_Kcfkr9kqEeim_JExmRxWuA" containerData="3000" horizontal="true">
-                <children xsi:type="basic:PartStack" xmi:id="_KcfksNkqEeim_JExmRxWuA" elementId="org.eclipse.ui.views.ContentOutlineMStack" containerData="3000" selectedElement="_KcfksdkqEeim_JExmRxWuA">
+              <children xsi:type="basic:PartSashContainer" xmi:id="_Kcfkr9kqEeim_JExmRxWuA" containerData="2355" selectedElement="_KcfksNkqEeim_JExmRxWuA" horizontal="true">
+                <children xsi:type="basic:PartStack" xmi:id="_KcfksNkqEeim_JExmRxWuA" elementId="org.eclipse.ui.views.ContentOutlineMStack" visible="false" containerData="3000" selectedElement="_KcfksdkqEeim_JExmRxWuA">
+                  <tags>Minimized</tags>
                   <children xsi:type="advanced:Placeholder" xmi:id="_KcfksdkqEeim_JExmRxWuA" elementId="org.eclipse.ui.views.ContentOutline" ref="_Kce9kNkqEeim_JExmRxWuA"/>
                 </children>
                 <children xsi:type="basic:PartStack" xmi:id="_KcfkstkqEeim_JExmRxWuA" elementId="org.eclipse.ui.console.ConsoleViewMStack" containerData="7000" selectedElement="_Kcfks9kqEeim_JExmRxWuA">
@@ -215,7 +216,12 @@
       </children>
     </trimBars>
     <trimBars xmi:id="_KJ7N89kqEeim_JExmRxWuA" elementId="org.eclipse.ui.trim.vertical1" contributorURI="platform:/plugin/org.eclipse.ui.workbench" side="Left"/>
-    <trimBars xmi:id="_KJ7N9NkqEeim_JExmRxWuA" elementId="org.eclipse.ui.trim.vertical2" contributorURI="platform:/plugin/org.eclipse.ui.workbench" side="Right"/>
+    <trimBars xmi:id="_KJ7N9NkqEeim_JExmRxWuA" elementId="org.eclipse.ui.trim.vertical2" contributorURI="platform:/plugin/org.eclipse.ui.workbench" side="Right">
+      <children xsi:type="menu:ToolControl" xmi:id="_Gr2QIOHTEeiwpZ3KhM2z9Q" elementId="org.eclipse.ui.views.ContentOutlineMStack(IDEWindow).(org.knime.workbench.ui.ModellerPerspective)" contributionURI="bundleclass://org.eclipse.e4.ui.workbench.addons.swt/org.eclipse.e4.ui.workbench.addons.minmax.TrimStack">
+        <tags>TrimStack</tags>
+        <tags>Draggable</tags>
+      </children>
+    </trimBars>
   </children>
   <bindingTables xmi:id="_KJ7N9dkqEeim_JExmRxWuA" contributorURI="platform:/plugin/org.eclipse.ui.workbench" bindingContext="_KJ7N9tkqEeim_JExmRxWuA">
     <bindings xmi:id="_KK6sd9kqEeim_JExmRxWuA" keySequence="CTRL+SHIFT+L" command="_KKOJCNkqEeim_JExmRxWuA"/>
@@ -1153,7 +1159,7 @@
   <addons xmi:id="_KJ7OAtkqEeim_JExmRxWuA" elementId="MinMax Addon" contributorURI="platform:/plugin/org.eclipse.ui.workbench" contributionURI="bundleclass://org.eclipse.e4.ui.workbench.addons.swt/org.eclipse.e4.ui.workbench.addons.minmax.MinMaxAddon"/>
   <addons xmi:id="_KJ7OA9kqEeim_JExmRxWuA" elementId="org.eclipse.ui.workbench.addon.0" contributorURI="platform:/plugin/org.eclipse.ui.workbench" contributionURI="bundleclass://org.eclipse.e4.ui.workbench/org.eclipse.e4.ui.internal.workbench.addons.HandlerProcessingAddon"/>
   <addons xmi:id="_KJ-4UNkqEeim_JExmRxWuA" elementId="SplitterAddon" contributionURI="bundleclass://org.eclipse.e4.ui.workbench.addons.swt/org.eclipse.e4.ui.workbench.addons.splitteraddon.SplitterAddon"/>
-  <addons xmi:id="_qPZEgNqpEeic7YXDDq_P2A" elementId="org.eclipse.ui.ide.addon.0" contributionURI="bundleclass://org.eclipse.ui.ide/org.eclipse.ui.internal.ide.addons.SaveAllDirtyPartsAddon"/>
+  <addons xmi:id="_k6_EEeHaEeicttK1jJ1fGQ" elementId="org.eclipse.ui.ide.addon.0" contributionURI="bundleclass://org.eclipse.ui.ide/org.eclipse.ui.internal.ide.addons.SaveAllDirtyPartsAddon"/>
   <addons xmi:id="_dz0JgGOlEeSMMaPQU2nlzw" elementId="org.eclipse.ui.ide.application.addon.0" contributorURI="platform:/plugin/org.eclipse.ui.ide.application" contributionURI="bundleclass://org.eclipse.ui.ide.application/org.eclipse.ui.internal.ide.application.addons.ModelCleanupAddon"/>
   <categories xmi:id="_KKLFkNkqEeim_JExmRxWuA" elementId="org.eclipse.team.ui.category.team" name="Team" description="Actions that apply when working with a Team"/>
   <categories xmi:id="_KKLFkdkqEeim_JExmRxWuA" elementId="org.eclipse.ui.category.views" name="Views" description="Commands for opening views"/>

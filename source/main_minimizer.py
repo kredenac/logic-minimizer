@@ -3,10 +3,12 @@ import pyeda
 import os
 import string
 import time
+import re
+
 # only white figures movement are of concern
 # isWhiteTurn, isRookCaptured, BKx, BKy, WKx, WKy, WRx, WRy
 lookup = {}
-BOARD_SIZE = 8
+BOARD_SIZE = 4
 
 # number of bits for coding the direction
 UDLR_BITS = 4
@@ -23,11 +25,19 @@ else:
     raise ValueError('Not accepting board sizes above 8')
 
 # size, diet, venom, legs3, legs2 legs1, europe, dangerous 
-animals = []
-animals.append("1101000") # lion
-animals.append("1111000") # komodo
-animals.append("0110001") # zmija
-animals.append("0011100") # pcela
+animalsDangerous = []
+animalsDangerous.append("1101000") # lion
+animalsDangerous.append("1111000") # komodo
+animalsDangerous.append("0110001") # snake
+animalsDangerous.append("0011100") # killer bee
+
+animalsSafe = []
+animalsSafe.append("0101001") # cat
+animalsSafe.append("0001000") # koala
+animalsSafe.append("0001001") # rabbit
+animalsSafe.append("1000000") # sea cow
+
+animals = animalsSafe
 
 # 6, for each of three pieces and their x and y axis
 TOTAL_KEY_LEN = 6 * POS_BIT_LEN 
@@ -45,9 +55,9 @@ WRy = 7
 
 def main():
     goIntoScriptDir()
-    mergeFormulas(animals, useFaster=True)
-    exit()
-    readInputFile()
+    #mergeFormulas(animals, useFaster=True)
+    #exit()
+    readInputFile(isOptimal = False)
     convertToBits()
 
     BEFORE_MINIMIZATION_LENGTH = len(bitLookup)
@@ -60,14 +70,14 @@ def main():
     #tableToPla(bitLookup, GENERATED_PLA)
 
     # r"0..0........" is for king going up and right
-    filteredLookup =  filterTable(bitLookup, r"1..1..........")
+    filteredLookup =  filterTable(bitLookup, byKey=r"............" ,byValue=r"............")
     print("Filtered length = ", len(filteredLookup))
     #printTable(filteredLookup)
     mergeFormulas(filteredLookup, useFaster=True)
     #MINIMIZED_OUTPUT_FILE = f"minimized{BOARD_SIZE}x{BOARD_SIZE}.pla"
     #print(f"Saved to {MINIMIZED_OUTPUT_FILE}")
 
-    # writeCsv(bitLookup)
+    writeCsv(bitLookup)
 
     print("Finished.")
 
@@ -76,9 +86,10 @@ def goIntoScriptDir():
     dname = os.path.dirname(abspath)
     os.chdir(dname)
     
-def readInputFile():
+def readInputFile(isOptimal):
     print ("reading file...")
-    INPUT_TABLE_FILE = f'tableGen/chessDict{BOARD_SIZE}x{BOARD_SIZE}.txt' 
+    chessStrategType = "Dict" if isOptimal else "Strategy"
+    INPUT_TABLE_FILE = f'tableGen/chess{chessStrategType}{BOARD_SIZE}x{BOARD_SIZE}.txt' 
     with open(INPUT_TABLE_FILE, 'r') as f:
         next(f) # skips file comment
         # make a dict
@@ -184,9 +195,13 @@ def printTable(table):
     print(f"Table has {len(table)} items.")
 
 
-def filterTable(table, filterString):
-    import re
-    return  {k:v for k,v in table.items() if re.match(filterString, v)}
+def filterTable(table, byKey = None, byValue = None):
+    resultTable = table
+    if byKey is not None:
+        resultTable = {k:v for k,v in resultTable.items() if re.match(byKey, k)}
+    if byValue is not None:
+        resultTable = {k:v for k,v in resultTable.items() if re.match(byValue, v)}
+    return resultTable
 
 def tableToPla(table, fileName):
     f = open(fileName, "w")

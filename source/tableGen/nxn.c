@@ -90,7 +90,7 @@ bool _B_SETTING_STEPS_DONE;
 // Declarations  
 
 // Miscellanous 
-void PrintTable(LookUpRecord * lur, bool shouldPrint);
+void PrintTable(LookUpRecord * lur, bool shouldPrint, bool isOptimal);
 void Print(KRKPosition p);
 BVKRKPosition Position2Bitvector(KRKPosition p);
 void Bitvector2Position(BVKRKPosition i,KRKPosition *p);
@@ -1383,7 +1383,7 @@ unsigned Measure(KRKPosition p) {
 /* -------------------------------------------------------------------------------- */
 
 // prints out the lookup table
-void PrintTable(LookUpRecord * lur, bool shouldPrint)
+void PrintTable(LookUpRecord * lur, bool shouldPrint, bool isOptimal)
 {
     int legitMoves = 0;
     FILE * f = fopen(outputFIleName, "w");
@@ -1396,11 +1396,17 @@ void PrintTable(LookUpRecord * lur, bool shouldPrint)
     for(int i=0;i<MAX_POS; i++)
     {
         LookUpRecord r = lur[i];
-        if (r.OptimalDist == ILLEGAL || r.OptimalDist == DRAW)
+        if (isOptimal && (r.OptimalDist == ILLEGAL || r.OptimalDist == DRAW))
         {
             //printf("Skipping %d\n", i);
             continue;
         }
+        if (!isOptimal && (r.StrategDist == ILLEGAL || r.StrategDist == DRAW))
+        {
+            //printf("Skipping %d\n", i);
+            continue;
+        }
+        
         legitMoves++;
         // if (!shouldPrint)
         //     continue;
@@ -1430,8 +1436,8 @@ void PrintTable(LookUpRecord * lur, bool shouldPrint)
             pos.WKx, pos.WKy,
             pos.WRx, pos.WRy
             );
-            
-        Bitvector2Position(r.OptimalPos, &pos);
+        
+        Bitvector2Position(isOptimal ? r.OptimalPos : r.StrategPos, &pos);
         fprintf(f, "%d %d %d %d %d %d %d %d\n",
             pos.bWhiteOnTurn, 
             pos.bRookCaptured,
@@ -1497,19 +1503,19 @@ unsigned main(unsigned argc, char **argv) {
     _B_SETTING_STEPS_DONE=false;
 
     //ComputeOptimalDistancesToWin();
-    // MeasureDecreases();
+    //MeasureDecreases();
     SetStrategyMoves();
 
-    // CountMeasureDecreasing();
+    //CountMeasureDecreasing();
 
-    // TerminationLemma();
+    //TerminationLemma();
 
     ComputeStrategyDistancesToWin();
     // CountStrategySteps();  
 
     seconds_curr = time (NULL);
     
-    PrintTable(LookUpTable, false);
+    PrintTable(LookUpTable, false, false);
 
     free(LookUpTable);
 
